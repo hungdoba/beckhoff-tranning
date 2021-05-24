@@ -1,0 +1,277 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.4">
+  <POU Name="MAIN" Id="{98912556-8e5b-4c30-b9ac-046de12224a1}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR 	
+	bHmi_LAMP1  : BOOL;
+	bHmi_LAMP2 : BOOL;
+	bHmi_LAMP3  : BOOL;
+	bHmi_LAMP4  : BOOL;
+	
+//	bOut_LAMP1  AT %Q*: BOOL;
+//	bOut_LAMP2  AT %Q*: BOOL;
+//	bOut_LAMP3  AT %Q*: BOOL;
+//	bOut_LAMP4  AT %Q*: BOOL;
+	
+	bHmi_Swtic1 : BOOL;
+	bHmi_Swtic2 : BOOL;
+	bHmi_Swtic3 : BOOL;
+	bHmi_Swtic4 : BOOL;
+	
+//	bIn_Swtic1 AT %I*: BOOL;
+//	bIn_Swtic2 AT %I*: BOOL;
+//	bIn_Swtic3 AT %I*: BOOL;
+//	bIn_Swtic4 AT %I*: BOOL;
+	
+	iIN_VOLUME AT %I*: INT:=1000;
+	
+	//bIN_SW2 AT %I*: BOOL;
+	fbBlinker: FB_Blinker;
+	fbCTU: CTU;
+	
+	//HMI  BarDisplay
+	iValueBarDisplay:INT;
+	tTimer:TON;
+	bDirection:BOOL;
+	bValuePotentialMeter:INT;
+	
+	//Bar Graph
+	lrSin:LREAL;
+	aryLrSin:ARRAY[0..200] OF LREAL;
+	tTimer2:TON;
+	i:INT;
+	
+	//check Box
+	bCheckBox:ARRAY[0..4] OF BOOL;
+	bCheckBox1:BOOL;
+	bCheckBox2:BOOL;
+	bCheckBox3:BOOL;
+	bCheckBox4:BOOL;
+	bCheckBox5:BOOL;
+	plsCheckBox1:R_trig;
+	plsCheckBox2:R_trig;
+	plsCheckBox3:R_trig;
+	plsCheckBox4:R_trig;
+	plsCheckBox5:R_trig;
+	sOutput2:STRING;
+	//Combbox and Radio Buttons
+	iCombINdex:INT;
+	sOutput:STRING;
+	
+    //Table 
+	aryLrSin1:ARRAY[0..4,0..20] OF DINT;
+	tTimer3:TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//bOUT_LAMP1:=bIN_SW1;
+//iOUT_METER:=iIN_VOLUME;
+//bOUT_LAMP3:= bIN_SW1 AND bIN_SW2;
+
+//pCounter();
+
+fbBlinker
+(
+//	bStart:=TRUE,
+	bStart:=bHmi_Swtic1,
+	tTime:=INT_TO_TIME(iIN_VOLUME),
+	//bOutPut=>
+);
+
+fbCTU(
+	CU:= fbBlinker.bOutPut, 
+	RESET:= fbCTU.Q, 
+	PV:= 4, 
+	//Q=> , 
+	//CV=> 
+);
+
+CASE fbCTU.CV OF 
+	1: 
+	bHmi_LAMP1:=TRUE;
+	bHmi_LAMP2:=FALSE;
+	bHmi_LAMP3:=FALSE;
+	bHmi_LAMP4:=FALSE;
+	2: 
+	bHmi_LAMP1:=FALSE;
+	bHmi_LAMP2:=TRUE;
+	bHmi_LAMP3:=FALSE;
+	bHmi_LAMP4:=FALSE;
+	3: 
+	bHmi_LAMP1:=FALSE;
+	bHmi_LAMP2:=FALSE;
+	bHmi_LAMP3:=TRUE;
+	bHmi_LAMP4:=FALSE;
+	4: 
+	bHmi_LAMP1:=FALSE;
+	bHmi_LAMP2:=FALSE;
+	bHmi_LAMP3:=FALSE;
+	bHmi_LAMP4:=TRUE;
+
+END_CASE
+
+//Hmi BarDisplay
+tTimer(IN:=bHmi_Swtic2,PT:=T#10MS);
+IF tTimer.Q THEN
+	tTimer(IN:=FALSE);
+	IF iValueBarDisplay = 1000 THEN
+		bDirection:=TRUE;
+	ELSIF iValueBarDisplay = 0 THEN
+		bDirection:=FALSE;	
+	END_IF
+	
+	IF bDirection THEN
+		iValueBarDisplay:=iValueBarDisplay-1;
+	ELSE
+		iValueBarDisplay:=iValueBarDisplay+1;
+	END_IF
+END_IF
+
+//HMI Bar Graph
+lrSin:=SIN(TO_REAL(iValueBarDisplay)/1000);
+tTimer2(IN:=bHmi_Swtic3,PT:=T#100MS);
+IF tTimer2.Q THEN
+	tTimer2(IN:=FALSE);
+	FOR i:= 200 TO 1 BY -1 DO 
+		aryLrSin[i]:=aryLrSin[i-1];
+	END_FOR
+	aryLrSin[0]:=LrSin;
+END_IF
+//CheckBox
+plsCheckBox1(CLK:=bCheckBox1);
+plsCheckBox2(CLK:=bCheckBox2);
+plsCheckBox3(CLK:=bCheckBox3);
+plsCheckBox4(CLK:=bCheckBox4);
+plsCheckBox5(CLK:=bCheckBox5);
+IF plsCheckBox1.Q THEN
+	sOutput2:='Opton1';
+	bCheckBox2:=FALSE;	
+	bCheckBox3:=FALSE;	
+	bCheckBox4:=FALSE;	
+	bCheckBox5:=FALSE;	
+ELSIF plsCheckBox2.Q THEN
+	sOutput2:='Opton2';
+	bCheckBox1:=FALSE;	
+	bCheckBox3:=FALSE;	
+	bCheckBox4:=FALSE;	
+	bCheckBox5:=FALSE;	
+ELSIF plsCheckBox3.Q THEN
+	sOutput2:='Opton3';
+	bCheckBox1:=FALSE;	
+	bCheckBox2:=FALSE;	
+	bCheckBox4:=FALSE;	
+	bCheckBox5:=FALSE;		
+ELSIF plsCheckBox4.Q THEN
+	sOutput2:='Opton4';
+	bCheckBox1:=FALSE;	
+	bCheckBox2:=FALSE;	
+	bCheckBox3:=FALSE;	
+	bCheckBox5:=FALSE;	
+ELSIF plsCheckBox5.Q THEN
+	sOutput2:='Opton5';
+	bCheckBox1:=FALSE;	
+	bCheckBox2:=FALSE;	
+	bCheckBox3:=FALSE;	
+	bCheckBox4:=FALSE;	
+END_IF
+//CombBox
+CASE iCombINdex OF
+0:
+ sOutput:='Opton1';
+1:
+ sOutput:='Opton2';
+2:
+ sOutput:='Opton3';
+3:
+ sOutput:='Opton4';
+ELSE
+ sOutput:='Error';
+END_CASE
+//Table
+tTimer3(IN:=bHmi_Swtic4,PT:=T#1000MS);
+IF tTimer3.Q THEN
+	tTimer3(IN:=FALSE);
+	FOR i:= 20 TO 1 BY -1 DO 
+		aryLrSin1[0,i]:=aryLrSin1[0,i-1];
+		aryLrSin1[1,i]:=aryLrSin1[1,i-1];
+		aryLrSin1[2,i]:=aryLrSin1[2,i-1];
+		aryLrSin1[3,i]:=aryLrSin1[3,i-1];
+		aryLrSin1[4,i]:=aryLrSin1[4,i-1];
+	END_FOR
+	aryLrSin1[0,0]:=TO_DINT(LrSin*10000);
+	aryLrSin1[1,0]:=TO_DINT(-LrSin*10000);
+	aryLrSin1[2,0]:=TO_DINT((LrSin+1)*10000);
+	aryLrSin1[3,0]:=TO_DINT((LrSin-1)*10000);
+	aryLrSin1[4,0]:=TO_DINT((LrSin*2)*10000);
+END_IF
+
+
+
+
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="3" Count="7" />
+      <LineId Id="395" Count="0" />
+      <LineId Id="11" Count="34" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="69" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="75" Count="1" />
+      <LineId Id="79" Count="1" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="88" Count="2" />
+      <LineId Id="92" Count="1" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="131" Count="1" />
+      <LineId Id="134" Count="3" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="457" Count="4" />
+      <LineId Id="233" Count="0" />
+      <LineId Id="253" Count="0" />
+      <LineId Id="251" Count="0" />
+      <LineId Id="254" Count="0" />
+      <LineId Id="256" Count="6" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="336" Count="0" />
+      <LineId Id="266" Count="3" />
+      <LineId Id="272" Count="0" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="273" Count="3" />
+      <LineId Id="279" Count="0" />
+      <LineId Id="338" Count="0" />
+      <LineId Id="280" Count="4" />
+      <LineId Id="278" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="145" Count="1" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="161" Count="4" />
+      <LineId Id="168" Count="3" />
+      <LineId Id="166" Count="1" />
+      <LineId Id="172" Count="3" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="127" Count="3" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="68" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
